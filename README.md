@@ -31,6 +31,15 @@
   <li><a href="#module-3-submission-guidelines">Submission Guidelines</a></li>
 </ol>
 </details>
+<details>
+<summary> <a href="#module-4-smart-contract-security">Module 4: Smart Contract Security</a></summary>
+<ol>
+  <li><a href="#module-4-overview">Overview</a></li>
+  <li><a href="#module-4-vulnerabilities">Vulnerabilities</a></li>
+  <li><a href="#module-4-running-tests">Running Tests</a></li>
+  <li><a href="#module-4-submission-guidelines">Submission Guidelines</a></li>
+</ol>
+</details>
 
 ---
 
@@ -575,6 +584,329 @@ npm run compile
 - Check the [Hardhat Documentation](https://hardhat.org/docs)
 - Review [Ethers.js v6 Documentation](https://docs.ethers.org/)
 - Review the module-specific README: `module3/README.md`
+- Ask in the course discussion forum
+- Reach out to the DevX team
+
+<p align="right">(<a href="#table-of-contents">back to top</a>) ⬆️</p>
+
+---
+
+# Module 4: Smart Contract Security
+
+💡 **Learning Time**: 4-6 hours  
+📹 **Video Lessons**: Available on the platform  
+🎯 **Goal**: Identify and fix security vulnerabilities in smart contracts based on professional audit reports
+
+## Module 4 Overview
+
+In Module 4, you'll learn how to identify and fix critical security vulnerabilities in Solidity smart contracts. This module is based on a real security audit report and teaches you essential security patterns used in professional blockchain development.
+
+### What You'll Learn
+
+By completing this module, you will be able to:
+- Read and interpret professional security audit reports
+- Identify and fix reentrancy vulnerabilities
+- Identify and fix data validation issues
+- Identify and fix access control problems
+- Apply the Checks-Effects-Interactions pattern
+- Implement robust input validation
+- Implement proper function access control
+- Verify security fixes through automated tests
+
+### What You'll Fix
+
+You'll work with the **OneMilNftPixels** contract, a vulnerable NFT marketplace that contains three critical security vulnerabilities discovered in a professional audit. Your goal is to fix these vulnerabilities while maintaining the contract's functionality.
+
+## Module 4 Vulnerabilities
+
+| # | Vulnerability | Severity | Type | Difficulty |
+|---|---------------|----------|------|------------|
+| OMP-001 | [Reentrancy in withdrawCompensation](./module4/README.md#omp-001-reentrancy-in-withdrawcompensation) | 🔴 CRITICAL | Reentrancy Attack | ⭐⭐⭐⭐ |
+| OMP-002 | [NFTs can be purchased for free](./module4/README.md#omp-002-nfts-can-be-purchased-for-free) | 🔴 CRITICAL | Data Validation | ⭐⭐⭐ |
+| OMP-003 | [Frontrunners can deny NFT purchases](./module4/README.md#omp-003-frontrunners-can-deny-nft-purchases) | 🟠 HIGH | Access Control | ⭐⭐⭐⭐ |
+
+### Vulnerability Details
+
+#### OMP-001: Reentrancy Attack
+**Concept**: Checks-Effects-Interactions Pattern
+
+The contract updates state **after** making an external call, allowing attackers to re-enter the function and drain funds.
+
+**Key Learning**: Always update state before external calls to prevent reentrancy attacks.
+
+#### OMP-002: Data Validation
+**Concept**: Input Validation
+
+The contract doesn't validate that encoded data matches actual transferred amounts, allowing attackers to buy NFTs for free.
+
+**Key Learning**: Always validate that calldata matches actual values - never trust user-provided data.
+
+#### OMP-003: Access Control
+**Concept**: Function Whitelisting
+
+The contract allows `delegatecall` to any function, enabling frontrunning attacks that can deny legitimate purchases.
+
+**Key Learning**: Use whitelists and avoid delegatecall with unvalidated external data.
+
+## Module 4 Running Tests
+
+### Compile Contracts
+```bash
+cd module4
+npx hardhat compile
+```
+
+### Run Security Tests
+```bash
+# Run all exploit tests to verify your fixes
+npx hardhat test test/Exploit-OMP001.js
+npx hardhat test test/Exploit-OMP002.js
+npx hardhat test test/Exploit-OMP003.js
+
+# Run all tests including functionality tests
+npx hardhat test
+```
+
+### View Detailed Test Output
+```bash
+npx hardhat test --verbose
+```
+
+## How to Complete Module 4
+
+### Step 1: Read the Audit Report
+
+Open and carefully read the security audit report:
+```
+module4/one-mil-nft-pixels--security-assessment-report--v1.1.pdf
+```
+
+This professional audit report details:
+- The three critical vulnerabilities
+- How each vulnerability can be exploited
+- The impact and severity of each issue
+- Recommendations for fixing each vulnerability
+
+### Step 2: Study the Vulnerable Contract
+
+Open the vulnerable contract:
+```
+module4/contracts/OneMilNftPixels.sol
+```
+
+Study the code and try to identify:
+- Where the reentrancy vulnerability exists
+- Where validation is missing
+- Where access control is insufficient
+
+### Step 3: Analyze the Exploits
+
+Review the exploit contracts to understand how attackers would exploit these vulnerabilities:
+```
+module4/contracts/security-audit/Exploit-OMP001.sol  # Reentrancy exploit
+module4/contracts/security-audit/Exploit-OMP003.sol  # Frontrunning exploit
+```
+
+### Step 4: Fix the Vulnerabilities
+
+Modify `OneMilNftPixels.sol` to fix all three vulnerabilities:
+
+**OMP-001 Fix**: Update state before external calls
+```solidity
+// Move state update BEFORE the external call
+compensationBalances[_msgSender()] = 0;
+bool withdrawalSuccess = acceptedToken.transferAndCall(address(to), compensationBalance);
+```
+
+**OMP-002 Fix**: Add validation
+```solidity
+// Validate that encoded amount matches actual amount
+require(amount == _amount, 'Amount mismatch');
+```
+
+**OMP-003 Fix**: Implement function whitelist
+```solidity
+// Only allow specific functions
+require(
+    selector == this.buy.selector || selector == this.update.selector,
+    'Call of an unknown function'
+);
+```
+
+### Step 5: Run Tests to Verify Fixes
+
+Run the exploit tests to verify your fixes prevent the attacks:
+
+```bash
+# These tests should now PASS (exploits should FAIL)
+npx hardhat test test/Exploit-OMP001.js  # 5 tests should pass
+npx hardhat test test/Exploit-OMP002.js  # 3 tests should pass
+npx hardhat test test/Exploit-OMP003.js  # 5 tests should pass
+```
+
+### Step 6: Verify Functionality Still Works
+
+Ensure your fixes didn't break the contract's normal functionality:
+
+```bash
+# All functionality tests should still pass
+npx hardhat test
+```
+
+## Module 4 Submission Guidelines
+
+### Before Submitting
+
+- ✅ All three vulnerabilities fixed
+- ✅ All exploit tests pass (exploits should fail)
+- ✅ All functionality tests still pass
+- ✅ Code includes comments explaining the fixes
+- ✅ You can explain each vulnerability and its fix
+
+### Submission Checklist
+
+```bash
+# 1. Create a branch following the naming convention: module4/your-username
+git checkout -b module4/your-username
+
+# 2. Run all tests one final time
+cd module4
+npx hardhat test
+
+# 3. Check for any uncommitted changes
+git status
+
+# 4. Commit your work
+git add module4/
+git commit -m "Complete Module 4: Smart Contract Security"
+
+# 5. Push to your fork
+git push origin module4/your-username
+
+# 6. Create Pull Request on GitHub to the parent repository
+# PR title must be: module4/your-username
+```
+
+**Remember**: Replace `your-username` with your course username or email address.
+
+### What We Check
+
+Your submission will be evaluated on:
+1. **Security**: All vulnerabilities properly fixed ✅
+2. **Correctness**: All tests pass (13 exploit tests + functionality tests) ✅
+3. **Code Quality**: Clean code with clear comments explaining fixes
+4. **Understanding**: Able to explain each vulnerability and why your fix works
+5. **No Breaking Changes**: Original functionality still works correctly
+
+### Expected Test Results
+
+After your fixes, you should see:
+
+**Exploit-OMP001.js** (5 tests passing):
+- ✅ Transfer some lunas to exploit
+- ✅ Transfer some lunas to oneMlnPix
+- ✅ Should NOT exploit reentrancy in withdrawCompensation()
+- ✅ Should NOT withdraw (almost) all Lunas from oneMlnPix
+- ✅ Exploit balance should NOT increase
+
+**Exploit-OMP002.js** (3 tests passing):
+- ✅ Attacker should have 1 Luna token
+- ✅ Attacker is NOT able to buy pixel for low price
+- ✅ Pixel should remain unowned after exploit attempt
+
+**Exploit-OMP003.js** (5 tests passing):
+- ✅ Deployer buys pixel 1001
+- ✅ Buyer becomes the new owner
+- ✅ Deployer buys the pixel back
+- ✅ Buyer receives a compensation
+- ✅ Attacker should NOT call withdrawCompensation through transferAndCall
+
+## Module 4 Tips for Success
+
+### 📚 Learning Resources
+
+- **Read the audit report thoroughly** - it contains all the information you need
+- **Study the exploit contracts** - understanding the attack helps you fix it
+- **Review the module README** in `module4/README.md` for detailed explanations
+- **Watch the video lessons** before attempting the fixes
+- **Research the security patterns**: Checks-Effects-Interactions, input validation, access control
+
+### 💡 Common Mistakes to Avoid
+
+- Don't just move code around without understanding why
+- Don't add validation in the wrong place (OMP-002 needs validation in `_transferReceived`)
+- Don't forget that fixing one vulnerability shouldn't break functionality
+- Don't skip reading the audit report - it has crucial details
+- Don't use complex solutions when simple ones work better
+
+### 🎯 Pro Tips
+
+- Fix vulnerabilities one at a time and test after each fix
+- Add comments explaining WHY your fix works
+- Compare vulnerable code with the fixed version in `FIXED_CONTRACT/`
+- Understand the attack vector before implementing the fix
+- Test both exploit prevention AND normal functionality
+- Draw diagrams of function call flows to understand reentrancy
+
+### 🔒 Security Best Practices
+
+1. **Checks-Effects-Interactions**: Always follow this pattern
+   - Checks: Validate conditions
+   - Effects: Update state
+   - Interactions: Call external contracts
+
+2. **Input Validation**: Never trust external data
+   - Validate all parameters
+   - Check that encoded data matches actual values
+   - Use `require` statements liberally
+
+3. **Access Control**: Restrict dangerous operations
+   - Use whitelists, not blacklists
+   - Avoid `delegatecall` with user-controlled data
+   - Validate function selectors
+
+## Module 4 Troubleshooting
+
+### Tests Don't Compile
+
+```bash
+# Try reinstalling dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# Recompile contracts
+npx hardhat clean
+npx hardhat compile
+```
+
+### "Amount mismatch" Error in Normal Tests
+
+**Cause**: Validation added in wrong place  
+**Solution**: Only validate in `_transferReceived`, not in `buy` or `update` functions directly
+
+### Exploit Tests Still Fail
+
+**Cause**: Vulnerability not properly fixed  
+**Solution**: 
+- Re-read the audit report section for that vulnerability
+- Check the expected solution in `module4/README.md`
+- Verify you implemented the fix in the correct location
+- Make sure state updates happen before external calls (OMP-001)
+
+### Functionality Tests Break After Fixes
+
+**Cause**: Fixes too restrictive or in wrong place  
+**Solution**:
+- Ensure fixes only affect the vulnerable code paths
+- Don't add unnecessary restrictions
+- Test both exploit prevention AND normal usage
+
+### Need More Help?
+
+- Check the detailed explanations in `module4/README.md`
+- Review the [ConsenSys Smart Contract Best Practices](https://consensys.github.io/smart-contract-best-practices/)
+- Study the [OpenZeppelin Security Patterns](https://docs.openzeppelin.com/contracts/4.x/)
+- Review the [SWC Registry](https://swcregistry.io/) for vulnerability classifications
 - Ask in the course discussion forum
 - Reach out to the DevX team
 

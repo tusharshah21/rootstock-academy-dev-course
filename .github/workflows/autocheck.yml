@@ -23,8 +23,9 @@ jobs:
 
       # 2. Detect the module from the PR title (e.g., module1/student-username)
       - name: Detect module from PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
           echo "Parsing PR title: $PR_TITLE"
           MODULE_RAW=$(echo "$PR_TITLE" | grep -ioE '^module[0-9]+')
 
